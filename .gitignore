@@ -1,0 +1,11 @@
+build/
+build-*/
+CMakeUserPresets.json
+CMakeCache.txt
+CMakeFiles/
+*.obj
+*.dll
+*.geode
+.idea/
+.vscode/
+.cache/

@@ -1,0 +1,110 @@
+{
+	"geode": "5.0.0",
+	"gd": {
+		"win": "2.2081"
+	},
+	"id": "dev.latencyzero",
+	"name": "LatencyZero 8K",
+	"version": "v1.0.0",
+	"developer": "dev",
+	"description": "Sub-frame input sampling, sharper presentation and audio pacing for weak laptops",
+	"tags": ["utility", "enhancement", "offline"],
+	"dependencies": [
+		{
+			"id": "geode.node-ids",
+			"version": ">=v1.23.0"
+		}
+	],
+	"settings": {
+		"boost-enabled": {
+			"name": "Boost enabled",
+			"description": "Master switch. Off means the mod measures and changes nothing",
+			"type": "bool",
+			"default": true
+		},
+		"poll-rate": {
+			"name": "Input sample rate",
+			"description": "How often the input thread reads key state. This is the sampling grid, not the device report rate: a mouse reporting at 1000 Hz cannot be read faster than it sends",
+			"type": "string",
+			"default": "8000",
+			"choices": {
+				"1000": "1000 Hz (1.000 ms)",
+				"2000": "2000 Hz (0.500 ms)",
+				"4000": "4000 Hz (0.250 ms)",
+				"8000": "8000 Hz (0.125 ms)"
+			}
+		},
+		"advance-clicks": {
+			"name": "Apply clicks on their own substep",
+			"description": "Hand the jump edge to the game at the physics substep it belongs to instead of waiting for the input queue. Falls back to native if an untracked jump source (touch, pad) is detected",
+			"type": "bool",
+			"default": true
+		},
+		"timer-resolution": {
+			"name": "Kernel timer 0.5 ms",
+			"description": "NtSetTimerResolution(5000) plus timeBeginPeriod(1) while boost is on",
+			"type": "bool",
+			"default": true
+		},
+		"high-priority": {
+			"name": "High process priority",
+			"description": "HIGH_PRIORITY_CLASS for the game process and power-throttling off for it and the input thread",
+			"type": "bool",
+			"default": true
+		},
+		"zero-frame-queue": {
+			"name": "Empty the GPU queue (glFinish)",
+			"description": "Serializes the driver before the swap so no rendered frame sits queued ahead of yours. Cuts presentation delay and costs frames per second",
+			"type": "bool",
+			"default": false
+		},
+		"uncap-fps": {
+			"name": "Ask the driver to drop vsync",
+			"description": "wglSwapIntervalEXT(0). Tearing appears; the queue depth does not necessarily change under DWM",
+			"type": "bool",
+			"default": false
+		},
+		"particle-guard": {
+			"name": "Skip particles under load",
+			"description": "Stops drawing level particle systems while the measured frame time is over budget",
+			"type": "bool",
+			"default": false
+		},
+		"frame-budget-ms": {
+			"name": "Frame budget (ms)",
+			"description": "Above this measured frame time the particle guard engages, below 80% of it it stands down",
+			"type": "int",
+			"default": 20,
+			"minimum": 6,
+			"maximum": 60
+		},
+		"audio-low-latency": {
+			"name": "Shrink the FMOD mix buffer",
+			"description": "setDSPBufferSize on the game's own system. Too small a buffer crackles on a weak CPU, so it stays off unless asked for",
+			"type": "bool",
+			"default": false
+		},
+		"audio-buffer-samples": {
+			"name": "FMOD block length (samples)",
+			"description": "Mix block length; latency is block * blocks / rate",
+			"type": "int",
+			"default": 128,
+			"minimum": 64,
+			"maximum": 4096
+		},
+		"audio-buffer-blocks": {
+			"name": "FMOD block count",
+			"description": "Number of mix blocks queued",
+			"type": "int",
+			"default": 4,
+			"minimum": 1,
+			"maximum": 8
+		},
+		"hud-visible": {
+			"name": "Show HUD in PlayLayer",
+			"description": "Corner label with measured input-to-apply, poll step, frame time and audio latency",
+			"type": "bool",
+			"default": true
+		}
+	}
+}
