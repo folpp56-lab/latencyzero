@@ -347,6 +347,12 @@ struct PROCESS_POWER_THROTTLING_STATE {
     DWORD StateMask;
 };
 #define PROCESS_POWER_THROTTLING_EXECUTION_SPEED 0x1u
+#endif
+
+// The runner's Windows SDK defines CURRENT_VERSION and EXECUTION_SPEED but not the
+// later-added IGNORE_TIMER_UPDATE, so it needs its own guard: keeping it inside the
+// CURRENT_VERSION block would skip it on any SDK that already ships that macro.
+#ifndef PROCESS_POWER_THROTTLING_IGNORE_TIMER_UPDATE
 #define PROCESS_POWER_THROTTLING_IGNORE_TIMER_UPDATE 0x2u
 #endif
 
