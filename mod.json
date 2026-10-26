@@ -9,12 +9,9 @@
 	"developer": "dev",
 	"description": "Sub-frame input sampling, sharper presentation and audio pacing for weak laptops",
 	"tags": ["utility", "enhancement", "offline"],
-	"dependencies": [
-		{
-			"id": "geode.node-ids",
-			"version": ">=v1.23.0"
-		}
-	],
+	"dependencies": {
+		"geode.node-ids": ">=v1.23.0"
+	},
 	"settings": {
 		"boost-enabled": {
 			"name": "Boost enabled",
@@ -27,12 +24,7 @@
 			"description": "How often the input thread reads key state. This is the sampling grid, not the device report rate: a mouse reporting at 1000 Hz cannot be read faster than it sends",
 			"type": "string",
 			"default": "8000",
-			"choices": {
-				"1000": "1000 Hz (1.000 ms)",
-				"2000": "2000 Hz (0.500 ms)",
-				"4000": "4000 Hz (0.250 ms)",
-				"8000": "8000 Hz (0.125 ms)"
-			}
+			"one-of": ["1000", "2000", "4000", "8000"]
 		},
 		"advance-clicks": {
 			"name": "Apply clicks on their own substep",
@@ -75,8 +67,8 @@
 			"description": "Above this measured frame time the particle guard engages, below 80% of it it stands down",
 			"type": "int",
 			"default": 20,
-			"minimum": 6,
-			"maximum": 60
+			"min": 6,
+			"max": 60
 		},
 		"audio-low-latency": {
 			"name": "Shrink the FMOD mix buffer",
@@ -89,16 +81,16 @@
 			"description": "Mix block length; latency is block * blocks / rate",
 			"type": "int",
 			"default": 128,
-			"minimum": 64,
-			"maximum": 4096
+			"min": 64,
+			"max": 4096
 		},
 		"audio-buffer-blocks": {
 			"name": "FMOD block count",
 			"description": "Number of mix blocks queued",
 			"type": "int",
 			"default": 4,
-			"minimum": 1,
-			"maximum": 8
+			"min": 1,
+			"max": 8
 		},
 		"hud-visible": {
 			"name": "Show HUD in PlayLayer",

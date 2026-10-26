@@ -144,10 +144,11 @@ Settings readSettings() {
     out.zeroFrameQueue = mod->getSettingValue<bool>("zero-frame-queue");
     out.uncapFps = mod->getSettingValue<bool>("uncap-fps");
     out.particleGuard = mod->getSettingValue<bool>("particle-guard");
-    out.frameBudgetMs = mod->getSettingValue<int>("frame-budget-ms");
+    // Geode v5 stores integer settings as int64_t; getSettingValue<int> would not find them.
+    out.frameBudgetMs = static_cast<int>(mod->getSettingValue<int64_t>("frame-budget-ms"));
     out.audioLowLatency = mod->getSettingValue<bool>("audio-low-latency");
-    out.audioSamples = mod->getSettingValue<int>("audio-buffer-samples");
-    out.audioBlocks = mod->getSettingValue<int>("audio-buffer-blocks");
+    out.audioSamples = static_cast<int>(mod->getSettingValue<int64_t>("audio-buffer-samples"));
+    out.audioBlocks = static_cast<int>(mod->getSettingValue<int64_t>("audio-buffer-blocks"));
     out.hud = mod->getSettingValue<bool>("hud-visible");
     return out;
 }
@@ -332,8 +333,8 @@ std::atomic<bool> g_skipParticles{false};
 
 using NtDelayExecutionFn = NTSTATUS(NTAPI*)(BOOLEAN alertable, PLONGLONG delay);
 using NtSetTimerResolutionFn = NTSTATUS(NTAPI*)(ULONG resolutionIn100ns, BOOLEAN set, PULONG actual);
-using SetProcessInformationFn = BOOL(WINAPI*)(HANDLE, PROCESSINFOCLASS, PVOID, DWORD);
-using SetThreadInformationFn = BOOL(WINAPI*)(HANDLE, THREADINFOCLASS, PVOID, DWORD);
+using SetProcessInformationFn = BOOL(WINAPI*)(HANDLE, int, PVOID, DWORD);
+using SetThreadInformationFn = BOOL(WINAPI*)(HANDLE, int, PVOID, DWORD);
 using SwapIntervalFn = void(WINAPI*)(int);
 
 // PROCESS_POWER_THROTTLING_STATE is spelled out so the file builds against an SDK older
@@ -442,7 +443,7 @@ void disableThreadThrottling() {
     state.Version = PROCESS_POWER_THROTTLING_CURRENT_VERSION;
     state.ControlMask = PROCESS_POWER_THROTTLING_EXECUTION_SPEED;
     state.StateMask = 0;
-    api.setThreadInformation(GetCurrentThread(), static_cast<THREADINFOCLASS>(kThreadPowerThrottlingClass),
+    api.setThreadInformation(GetCurrentThread(), kThreadPowerThrottlingClass,
         &state, sizeof(state));
 }
 
@@ -559,7 +560,7 @@ void applySystemTuning(bool on) {
             // StateMask 0 means "do not throttle this process".
             state.StateMask = on ? 0u : PROCESS_POWER_THROTTLING_EXECUTION_SPEED;
             if (!api.setProcessInformation(GetCurrentProcess(),
-                    static_cast<PROCESSINFOCLASS>(kProcessPowerThrottlingClass), &state, sizeof(state))) {
+                    kProcessPowerThrottlingClass, &state, sizeof(state))) {
                 log::debug("LatencyZero: power throttling control unavailable on this Windows");
             }
         }
@@ -586,6 +587,20 @@ bool g_swapIntervalLowered = false;
 void noteSwap() {
     const int64_t now = qpc::now();
     auto& s = stats();
+
+    // F9 / F10 on a rising edge, read directly so the hotkeys do not depend on the
+    // Geode KeyboardInputEvent listener signature, which moved between SDK versions.
+    // Called once per presented frame, which is fast enough for a two-key shortcut.
+    auto rising = [](int vk, bool& wasDown) {
+        const bool down = (GetAsyncKeyState(vk) & 0x8000) != 0;
+        const bool edge = down && !wasDown;
+        wasDown = down;
+        return edge;
+    };
+    static bool wasF9 = false;
+    static bool wasF10 = false;
+    if (rising(VK_F10, wasF10)) toggleBoost();
+    else if (rising(VK_F9, wasF9)) benchToggle();
 
     if (g_pacing.lastSwap) {
         const double ms = qpc::toMs(now - g_pacing.lastSwap);
@@ -924,14 +939,7 @@ $execute {
     log::info("LatencyZero: input tuning is implemented for Windows only");
 #endif
 
-    auto keys = geode::KeyboardInputEvent().listen([](geode::KeyboardInputData& event) {
-        if (event.action != geode::KeyboardInputData::Action::Press)
-            return ListenerResult::Propagate;
-        if (event.key == cocos2d::KEY_F10) lz::toggleBoost();
-        else if (event.key == cocos2d::KEY_F9) lz::benchToggle();
-        return ListenerResult::Propagate;
-    });
-    keys.leak();
+    // F9 / F10 are handled by the rising-edge poll in noteSwap(), not a Geode listener.
 
     (void)mod;
 }

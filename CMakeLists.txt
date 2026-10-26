@@ -17,14 +17,15 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
 target_include_directories(${PROJECT_NAME} PRIVATE src)
 
-if (WIN32)
-    # winmm   - timeBeginPeriod / timeEndPeriod
-    # opengl32 - glFinish / glFlush prototypes and entry points
-    # ntdll and kernel32 extras (NtSetTimerResolution, SetProcessInformation,
-    # SetThreadInformation, wglSwapIntervalEXT) are resolved at run time through
-    # GetProcAddress, so no import library is needed for them and an older SDK
-    # still builds.
-    target_link_libraries(${PROJECT_NAME} PRIVATE winmm opengl32)
-endif()
-
 setup_geode_mod(${PROJECT_NAME})
+
+# Linked after setup_geode_mod, and without PRIVATE: setup_geode_mod finalizes the
+# target's link interface, and extra system libs have to attach to the finished target.
+# winmm   - timeBeginPeriod / timeEndPeriod
+# opengl32 - glFinish / glFlush prototypes and entry points
+# ntdll and kernel32 extras (NtSetTimerResolution, SetProcessInformation,
+# SetThreadInformation, wglSwapIntervalEXT) are resolved at run time through
+# GetProcAddress, so no import library is needed for them and an older SDK still builds.
+if (WIN32)
+    target_link_libraries(${PROJECT_NAME} winmm opengl32)
+endif()
